@@ -1,64 +1,85 @@
 <?php
 /**
- * Plugin Name: TS eMail Obfuscate
+ * Plugin Name: TS Email Obfuscate
  * Plugin URI: http://tecsmith.com.au
  * Description: Creates an [email] shortcode
  * Author: Vino Rodrigues
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author URI: http://vinorodrigues.com
 **/
 
-// Small fix to work arround windows and virtual paths while in dev env.
-if ( defined('WP_DEBUG') && WP_DEBUG )
-	define( 'FAVICON_PLUGIN_URL', plugins_url() . '/ts-email-obfuscate' );
+
 if (!defined('FAVICON_PLUGIN_URL'))
-	define( 'FAVICON_PLUGIN_URL', plugins_url( '', __FILE__ ) );
+	define( 'FAVICON_PLUGIN_URL', str_replace( ' ', '%20', plugins_url( '', __FILE__ ) ) );
+
+
+/**
+ *  Obfuscate Email
+ */
+if (!function_exists('ts_obfuscate_email')) :
+function ts_obfuscate_email($to, $name = false, $class = false, $rel = false) {
+	if (!is_email($to)) return '';
+	if (strcmp($to, $name) == 0) $name = false;
+	if ($rel === false) $rel = 'nofollow';
+
+	if (true) {  // ----------- Optional second layer obfuscation, html chars ----------
+		$never = array('.', '@', '+');  // don't encode as not supported in IE
+		$new = '';
+		for ($i = 0; $i < strlen($to); $i++) {
+			if (!in_array($to[$i], $never)) {
+				switch (rand(1, 3)) {
+					case 2: $new .= '&#'.ord($to[$i]).';'; break;
+					case 3: $new .= '&#x'.dechex(ord($to[$i])).';'; break;
+					default: $new .= $to[$i];
+				}
+			} else {
+				$new .= $to[$i];
+			}
+		}
+		$to = $new;
+	}
+
+	$tag = '<a href="mailto:' . $to . '" rel="' . $rel . '"';
+	if ($class !== false) $tag .= ' class="' . $class . '"';
+	$tag .= '>';
+	$tag .= ($name !== false) ? $name : $to;
+	$tag .= '</a>';
+
+	$tag = str_rot13($tag);  // First layer obfuscation, ROT13 encoding
+	$tag = str_replace('"', '\"', $tag);
+
+	$output = '<script type="text/javascript">';
+	$output.= '  document.write("' . $tag . '".replace(/[a-zA-Z]/g,';
+	$output.= '  function(c){return String.fromCharCode((c<="Z"?90:122)>=(c=c.charCodeAt(0)+13)?c:c-26);}));';
+	$output.= '</script><noscript>&#x1f6ab;</noscript>';
+
+	return $output;
+}
+endif;
+
 
 /**
  * Hide email using a shortcode.
  * @param array  $atts    Shortcode attributes.
  * @param string $content The shortcode content. Should be an email address.
  *
- * @return string The obfuscated email address. 
+ * @return string The obfuscated email address.
  */
 function ts_email_obfuscate_shortcode( $atts , $content = null ) {
 
 	extract( shortcode_atts( array(
-		'email' => $content,
-		'name' => $content,
-        ), $atts, 'email') );
+		'to'    => $content,
+		'name'  => $content,
+		'class' => false,
+        	), $atts, 'email') );
 
-	if (!is_email($email)) return $content;
-    if (strcmp($email, $name) == 0) $name = FALSE;
-	
-	$pos = strpos( $email, '@' );
-	$pre = substr( $email, 0, $pos);
-    $dom = substr( $email, $pos+1);
-    
-    $ret = '<script language="JavaScript">' . PHP_EOL;
-    $ret .= '  var ema = \'' . $pre . '\' + String.fromCharCode(64);' . PHP_EOL;
-    $ret .= '  ema = ema + \'' . $dom . '\';' . PHP_EOL;
-    $ret .= '  document.write(\'<a href="mailto:\'); document.write(ema); document.write(\'">';
-    if (!$name) {
-        $ret .= '\' + ema + \'';
-    } else {
-        $ret .= $name;
-    }
-    $ret .= '</a>\');' . PHP_EOL;
-    $ret .= '</script>';
-	return $ret;
+	if (!is_email($to)) return $content;
+
+	return ts_obfuscate_email($to, $name, $class);
 }
-    
+
 add_shortcode( 'email', 'ts_email_obfuscate_shortcode' );
 
 // Enable shortcodes in widget text
 add_filter( 'widget_text', 'shortcode_unautop' );
 add_filter( 'widget_text', 'do_shortcode' );
-
-/*
-<script language="JavaScript">// < ![CDATA[
-var ema = 'jack' + String.fromCharCode(64);
-              
-              
-// ]]></script>
-*/
