@@ -9,8 +9,8 @@
 **/
 
 
-if (!defined('FAVICON_PLUGIN_URL'))
-	define( 'FAVICON_PLUGIN_URL', str_replace( ' ', '%20', plugins_url( '', __FILE__ ) ) );
+// if (!defined('EMAIL_OBFS_PLUGIN_URL'))
+// 	define( 'EMAIL_OBFS_PLUGIN_URL', str_replace( ' ', '%20', plugins_url( '', __FILE__ ) ) );
 
 
 /**
