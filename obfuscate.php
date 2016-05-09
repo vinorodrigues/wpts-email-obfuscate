@@ -4,7 +4,7 @@
  * Plugin URI: http://tecsmith.com.au
  * Description: Creates an [email] shortcode
  * Author: Vino Rodrigues
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author URI: http://vinorodrigues.com
 **/
 
@@ -83,3 +83,12 @@ add_shortcode( 'email', 'ts_email_obfuscate_shortcode' );
 // Enable shortcodes in widget text
 add_filter( 'widget_text', 'shortcode_unautop' );
 add_filter( 'widget_text', 'do_shortcode' );
+
+
+// Tecsmith Options
+function ts_email_obfuscate_admin_menu() {
+	if (function_exists('add_tecsmith_item'))
+		add_tecsmith_item( __('TS Email Obfuscate'), basename(__FILE__, '.php'), 2 );
+}
+
+add_action( 'admin_menu', 'ts_email_obfuscate_admin_menu' );
